@@ -65,8 +65,11 @@ SimpleGui.draw = function (state, text)
 end
 
 SimpleGui.button = function (state, text)
-	SimpleGui.draw(state, text)
-	return true
+	state.button_index = state.button_index or 1
+	SimpleGui.draw(state, "[" .. state.button_index .. "] " .. text)
+	local b = stingray.Keyboard.button_index("" .. state.button_index)
+	state.button_index = state.button_index + 1
+	return stingray.Keyboard.pressed(b)
 end
 
 -- Can provide a config for the basic project, or it will use a default if not.
@@ -91,6 +94,7 @@ function Project.on_level_shutdown_post_flow()
 end
 
 local gui_state = nil
+local data = ""
 
 -- Optional function called by SimpleProject after world update (we will probably want to split to pre/post appkit calls)
 function Project.update(dt)
@@ -98,7 +102,7 @@ function Project.update(dt)
 	gui_state = gui_state or SimpleGui.init()
 	local gs = gui_state
 	gs.x, gs.y = 50, 50
-	local data = ""
+	gs.button_index = 1
 	if SimpleGui.button(gs, "GET http://www.example.com") then
 		data = Http.get("http://www.example.com")
 	end
