@@ -22,7 +22,7 @@ ffi.cdef [[
 	int curl_easy_perform(void *curl);
 	void curl_easy_cleanup(void *curl);
 ]]
-local libcurl = ffi.load [[C:\Work\curl\bin\libcurl.dll]]
+local libcurl = ffi.load [[libcurl.dll]]
 local curl = libcurl.curl_easy_init()
 libcurl.curl_easy_setopt(curl, libcurl.CURLOPT_URL, "http://example.com")
 
