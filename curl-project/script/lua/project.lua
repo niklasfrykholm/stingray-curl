@@ -60,13 +60,16 @@ end
 
 SimpleGui.draw = function (state, text)
 	local pos = stingray.Vector2(state.x, state.size.height - state.y)
-	stingray.Gui.text(state.gui, text, SimpleGui.font, SimpleGui.font_size, SimpleGui.font_material, pos, stingray.Color(255,255,255))
+	stingray.Gui.text(state.gui, text, SimpleGui.font, SimpleGui.font_size, SimpleGui.font_material, pos, state.color or stingray.Color(255,255,255))
 	state.y = state.y + 20
 end
 
 SimpleGui.button = function (state, text)
 	state.button_index = state.button_index or 1
+	local c = state.color
+	state.color = stingray.Color(255,255,0)
 	SimpleGui.draw(state, "[" .. state.button_index .. "] " .. text)
+	state.color = c
 	local b = stingray.Keyboard.button_index("" .. state.button_index)
 	state.button_index = state.button_index + 1
 	return stingray.Keyboard.pressed(b)
@@ -95,21 +98,29 @@ end
 
 local gui_state = nil
 local data = ""
+local err = nil
 
 -- Optional function called by SimpleProject after world update (we will probably want to split to pre/post appkit calls)
 function Project.update(dt)
-	-- Http.get("http://www.example.com")
+	local url_menu = {"http://www.example.com", "http://www.autodesk.com", "https://www.google.se/search?q=stingray"}
 	gui_state = gui_state or SimpleGui.init()
 	local gs = gui_state
 	gs.x, gs.y = 50, 50
 	gs.button_index = 1
-	if SimpleGui.button(gs, "GET http://www.example.com") then
-		data = Http.get("http://www.example.com")
-	end
+	gs.color = stingray.Color(255,255,255)
+	for _,url in ipairs(url_menu) do
+    	if SimpleGui.button(gs, url) then
+    		data, err = Http.get(url)
+    	end
+    end
 	SimpleGui.draw(gs, "")
-	for s in string.gmatch(data, ".-\r?\n") do
-		SimpleGui.draw(gs, s)
-	end
+	if data then
+    	for s in string.gmatch(data, ".-\r?\n") do
+    		SimpleGui.draw(gs, s)
+    	end
+    elseif err then
+        SimpleGui.draw(gs, "ERROR: " .. err)
+    end
 end
 
 -- Optional function called by SimpleProject *before* appkit/world render
