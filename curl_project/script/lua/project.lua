@@ -13,18 +13,16 @@ Project.level_names = {
 
 -- Load curl
 local ffi = require 'ffi'
-ffi.cdef [[
-	typedef enum {
-		CURLOPT_URL = 10000 + 2,
-	} CURLoption;
-	void *curl_easy_init();
-	int curl_easy_setopt(void *curl, int option, ...);
-	int curl_easy_perform(void *curl);
-	void curl_easy_cleanup(void *curl);
-]]
-local libcurl = ffi.load [[libcurl.dll]]
-local curl = libcurl.curl_easy_init()
-libcurl.curl_easy_setopt(curl, libcurl.CURLOPT_URL, "http://example.com")
+local curl = require 'script/lua/luajit-curl'
+local ch = curl.curl_easy_init()
+curl.curl_easy_setopt(ch, curl.CURLOPT_URL, "http://example.com")
+curl.curl_easy_setopt(ch, curl.CURLOPT_FOLLOWLOCATION, 1)
+local result = curl.curl_easy_perform(ch)
+print("CURL RESULT: ", result)
+if result ~= curl.CURLE_OK then
+	print("FAILURE:", ffi.string(curl.curl_easy_strerror(result)))
+end
+curl.curl_easy_cleanup(ch)
 
 -- Can provide a config for the basic project, or it will use a default if not.
 local SimpleProject = require 'core/appkit/lua/simple_project'
