@@ -17,28 +17,33 @@ local curl = require 'script/lua/luajit-curl'
 
 Http = Http or {}
 
+function make_callback(t)
+    t.data = ""
+    local cb = function(ptr, size, nmemb, stream)
+		local bytes = size*nmemb
+        local buf = ffi.new('char[?]', bytes+1)
+        ffi.copy(buf, ptr, bytes)
+        buf[bytes] = 0
+        t.data = t.data .. ffi.string(buf)
+        return bytes
+	end
+    local fptr = ffi.cast("size_t (*)(char *, size_t, size_t, void *)", cb)
+    return fptr
+end
+
 Http.get = function(url)
 	local ch = curl.curl_easy_init()
 	curl.curl_easy_setopt(ch, curl.CURLOPT_URL, url)
 	curl.curl_easy_setopt(ch, curl.CURLOPT_FOLLOWLOCATION, 1)
 
-	local data = ""
-	local cb = function(ptr, size, nmemb, stream)
-		local bytes = size*nmemb
-        local buf = ffi.new('char[?]', bytes+1)
-        ffi.copy(buf, ptr, bytes)
-        buf[bytes] = 0
-        data = data .. ffi.string(buf)
-        return bytes
-	end
-	local fptr = ffi.cast("size_t (*)(char *, size_t, size_t, void *)", cb)
-	curl.curl_easy_setopt(ch, curl.CURLOPT_WRITEFUNCTION, fptr)
+	local t = {}
+	curl.curl_easy_setopt(ch, curl.CURLOPT_WRITEFUNCTION, make_callback(t))
 	local result = curl.curl_easy_perform(ch)
 	curl.curl_easy_cleanup(ch)
 	if result ~= curl.CURLE_OK then
 		return nil, ffi.string(curl.curl_easy_strerror(result))
 	else
-		return data
+		return t.data
 	end
 end
 
