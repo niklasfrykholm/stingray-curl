@@ -120,8 +120,11 @@ function Project.update(dt)
     end
 	SimpleGui.draw(gs, "")
 	if data then
+	    local max_lines = 50
     	for s in string.gmatch(data, ".-\r?\n") do
+    	    if max_lines <= 0 then break end
     		SimpleGui.draw(gs, s)
+    		max_lines = max_lines - 1
     	end
     elseif err then
         SimpleGui.draw(gs, "ERROR: " .. err)
