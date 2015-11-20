@@ -22,13 +22,13 @@ Http.get = function(url)
 	curl.curl_easy_setopt(ch, curl.CURLOPT_URL, url)
 	curl.curl_easy_setopt(ch, curl.CURLOPT_FOLLOWLOCATION, 1)
 
-	local data = nil
+	local data = ""
 	local cb = function(ptr, size, nmemb, stream)
 		local bytes = size*nmemb
         local buf = ffi.new('char[?]', bytes+1)
         ffi.copy(buf, ptr, bytes)
         buf[bytes] = 0
-        data = ffi.string(buf)
+        data = data .. ffi.string(buf)
         return bytes
 	end
 	local fptr = ffi.cast("size_t (*)(char *, size_t, size_t, void *)", cb)
