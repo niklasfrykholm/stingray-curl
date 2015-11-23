@@ -31,14 +31,18 @@ function make_callback(t)
     return fptr
 end
 
-Http.get = function(url)
-	local ch = curl.curl_easy_init()
-	curl.curl_easy_setopt(ch, curl.CURLOPT_URL, url)
-	curl.curl_easy_setopt(ch, curl.CURLOPT_FOLLOWLOCATION, 1)
-
+Http._setup = function(url)
 	local t = {}
-	curl.curl_easy_setopt(ch, curl.CURLOPT_WRITEFUNCTION, make_callback(t))
-	local result = curl.curl_easy_perform(ch)
+	t.ch = curl.curl_easy_init()
+	curl.curl_easy_setopt(t.ch, curl.CURLOPT_URL, url)
+	curl.curl_easy_setopt(t.ch, curl.CURLOPT_FOLLOWLOCATION, 1)
+	curl.curl_easy_setopt(t.ch, curl.CURLOPT_WRITEFUNCTION, make_callback(t))
+	return t
+end
+
+Http.get = function(url)
+	local t = Http._setup(url)
+	local result = curl.curl_easy_perform(t.ch)
 	curl.curl_easy_cleanup(ch)
 	if result ~= curl.CURLE_OK then
 		return nil, ffi.string(curl.curl_easy_strerror(result))
