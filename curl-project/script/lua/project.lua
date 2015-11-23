@@ -51,6 +51,24 @@ Http.get = function(url)
 	end
 end
 
+Http.get_async = function(url)
+	local t = Http._setup(url)
+	t.mh = curl.curl_multi_init()
+	curl.curl_multi_add_handle(t.mh, t.ch)
+	return t
+end
+
+Http.update_async = function(t)
+	local active = ffi.new("int[1]", 0)
+	local result = curl.curl_multi_perform(t.mh, active)
+	if active[0] > 0 then
+		return nil
+	else
+		curl.curl_multi_cleanup(t.mh)
+		return t.data
+	end
+end
+
 SimpleGui = SimpleGui or {}
 
 SimpleGui.font = 'core/performance_hud/debug'
@@ -108,6 +126,7 @@ end
 local gui_state = nil
 local data = ""
 local err = nil
+local async = nil
 
 -- Optional function called by SimpleProject after world update (we will probably want to split to pre/post appkit calls)
 function Project.update(dt)
@@ -118,14 +137,25 @@ function Project.update(dt)
 	gs.button_index = 1
 	gs.color = stingray.Color(255,255,255)
 	for _,url in ipairs(url_menu) do
-    	if SimpleGui.button(gs, url) then
-    		data, err = Http.get(url)
+    	if SimpleGui.button(gs, url) and not(async) then
+				data = "..."
+				async = Http.get_async(url)
     	end
     end
+	if async then
+		local d,e = Http.update_async(async)
+		if d or e then
+			data = d
+			err = e
+			async = nil
+		else
+			data = data .. "."
+		end
+	end
 	SimpleGui.draw(gs, "")
 	if data then
 	    local max_lines = 50
-    	for s in string.gmatch(data, ".-\r?\n") do
+    	for s in string.gmatch(data, "[^\r\n]*") do
     	    if max_lines <= 0 then break end
     		SimpleGui.draw(gs, s)
     		max_lines = max_lines - 1
